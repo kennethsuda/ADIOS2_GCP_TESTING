@@ -25,8 +25,22 @@
 #include <map>
 #include <vector>
 
+//#define DISABLE_CALIPER x
+//#define SKIP_STARTUP 3
+#ifndef DISABLE_CALIPER
 #include <caliper/cali-manager.h>
 #include <caliper/cali.h>
+#ifdef SKIP_STARTUP
+    #define PERF_MARK_BEGIN(x) if (m_CurrentStep > SKIP_STARTUP) CALI_MARK_BEGIN(x)
+    #define PERF_MARK_END(x) if (m_CurrentStep > SKIP_STARTUP) CALI_MARK_END(x)
+#else
+    #define PERF_MARK_BEGIN(x) CALI_MARK_BEGIN(x)
+    #define PERF_MARK_END(x) CALI_MARK_END(x)
+#endif
+#else
+#define CALI_MARK_BEGIN(x)
+#define CALI_MARK_END(x)
+#endif
 
 #define MAX_KV_GET_REQS 100
 

@@ -24,8 +24,22 @@
 #include "adios2/toolkit/shm/Spinlock.h"
 #include "adios2/toolkit/shm/TokenChain.h"
 #include "adios2/toolkit/transportman/TransportMan.h"
+//#define DISABLE_CALIPER x
+//#define SKIP_STARTUP 3
+#ifndef DISABLE_CALIPER
 #include <caliper/cali-manager.h>
 #include <caliper/cali.h>
+#ifdef SKIP_STARTUP
+    #define PERF_MARK_BEGIN(x) if (m_WriterStep > SKIP_STARTUP) CALI_MARK_BEGIN(x)
+    #define PERF_MARK_END(x) if (m_WriterStep > SKIP_STARTUP) CALI_MARK_END(x)
+#else
+    #define PERF_MARK_BEGIN(x) CALI_MARK_BEGIN(x)
+    #define PERF_MARK_END(x) CALI_MARK_END(x)
+#endif
+#else
+#define CALI_MARK_BEGIN(x)
+#define CALI_MARK_END(x)
+#endif
 #include <daos.h>
 #include <daos_obj.h>
 
