@@ -37,8 +37,8 @@
     #define PERF_MARK_END(x) CALI_MARK_END(x)
 #endif
 #else
-#define CALI_MARK_BEGIN(x)
-#define CALI_MARK_END(x)
+#define PERF_MARK_BEGIN(x)
+#define PERF_MARK_END(x)
 #endif
 #include <daos.h>
 #include <daos_obj.h>
