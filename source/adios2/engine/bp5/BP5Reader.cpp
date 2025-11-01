@@ -179,6 +179,7 @@ void BP5Reader::InstallMetadataForTimestep(size_t Step)
         size_t ThisMDSize =
             helper::ReadValue<uint64_t>(m_Metadata.Data(), Position, m_Minifooter.IsLittleEndian);
         char *ThisMD = m_Metadata.Data() + MDPosition;
+        CALI_MARK_BEGIN("BP5Reader::InstallMetaData");
         if ((m_OpenMode == Mode::ReadRandomAccess) || (m_FlattenSteps))
         {
             m_BP5Deserializer->InstallMetaData(ThisMD, ThisMDSize, WriterRank, Step);
@@ -187,6 +188,7 @@ void BP5Reader::InstallMetadataForTimestep(size_t Step)
         {
             m_BP5Deserializer->InstallMetaData(ThisMD, ThisMDSize, WriterRank);
         }
+        CALI_MARK_END("BP5Reader::InstallMetaData");
         MDPosition += ThisMDSize;
     }
     for (size_t WriterRank = 0; WriterRank < WriterCount; WriterRank++)
@@ -364,6 +366,7 @@ StepStatus BP5Reader::BeginStep(StepMode mode, const float timeoutSeconds)
         m_BP5Deserializer->SetupForStep(m_CurrentStep,
                                         m_WriterMap[m_WriterMapIndex[m_CurrentStep]].WriterCount);
 
+        CALI_MARK_BEGIN("BP5Reader::InstallMetadataForTimestep");
         if (m_Parameters.MetadataThreads > 1)
         {
             ParallelInstallMetadataForTimestep(m_CurrentStep);
@@ -372,6 +375,7 @@ StepStatus BP5Reader::BeginStep(StepMode mode, const float timeoutSeconds)
         {
             InstallMetadataForTimestep(m_CurrentStep);
         }
+        CALI_MARK_END("BP5Reader::InstallMetadataForTimestep");
         m_IO.ResetVariablesStepSelection(false, "in call to BP5 Reader BeginStep");
 
         // caches attributes for each step
@@ -399,7 +403,9 @@ void BP5Reader::EndStep()
     }
     m_BetweenStepPairs = false;
     PERFSTUBS_SCOPED_TIMER("BP5Reader::EndStep");
+    PERF_MARK_BEGIN("BP5Reader::PerformGets");
     PerformGets();
+    PERF_MARK_END("BP5Reader::PerformGets");
     for (auto &item : MinBlocksInfoMap)
     {
         delete item.second;
@@ -1394,6 +1400,7 @@ void BP5Reader::UpdateBuffer(const TimePoint &timeoutInstant, const Seconds &pol
     }
     if (m_StepsCount > stepsBefore)
     {
+        CALI_MARK_BEGIN("BP5Reader::metadata-acquisition");
         size_t BCastSize = (size_t)-1, BCastPos = (size_t)-1;
         m_Metadata.Reset(true, false);
         m_MetaMetadata.Reset(true, false);
@@ -1413,7 +1420,9 @@ void BP5Reader::UpdateBuffer(const TimePoint &timeoutInstant, const Seconds &pol
             size_t actualFileSize = 0;
             do
             {
+                CALI_MARK_BEGIN("BP5Reader::GetFileSize");
                 actualFileSize = m_MDFileManager.GetFileSize(0);
+                CALI_MARK_END("BP5Reader::GetFileSize");
                 if (getenv("ReadByStep"))
                 {
                     static int steps = 0;
@@ -1449,7 +1458,9 @@ void BP5Reader::UpdateBuffer(const TimePoint &timeoutInstant, const Seconds &pol
                         m_Metadata.Resize(BCastPos + BCastSize, "");
                     }
                     m_JSONProfiler.AddBytes("metadataread", p.second);
+                    CALI_MARK_BEGIN("BP5Reader::m_MDFileManager.ReadFile");
                     m_MDFileManager.ReadFile(m_Metadata.Data() + mempos, p.second, p.first);
+                    CALI_MARK_END("BP5Reader::m_MDFileManager.ReadFile");
                     mempos += p.second;
                 }
                 m_MDFileAlreadyReadSize = expectedMinFileSize;
@@ -1507,6 +1518,7 @@ void BP5Reader::UpdateBuffer(const TimePoint &timeoutInstant, const Seconds &pol
         }
 
         // broadcast metadata index buffer to all ranks from zero
+        CALI_MARK_BEGIN("BP5Reader::broadcast_metadata");
         m_Comm.BroadcastVector(m_MetaMetadata.m_Buffer);
 
         InstallMetaMetaData(m_MetaMetadata);
@@ -1526,6 +1538,8 @@ void BP5Reader::UpdateBuffer(const TimePoint &timeoutInstant, const Seconds &pol
         {
             m_Comm.Bcast(m_Metadata.Data() + BCastPos, BCastSize, 0);
         }
+        CALI_MARK_END("BP5Reader::broadcast_metadata");
+        CALI_MARK_END("BP5Reader::metadata-acquisition");
 
         if ((m_OpenMode == Mode::ReadRandomAccess) || m_FlattenSteps)
         {
