@@ -403,9 +403,9 @@ void BP5Reader::EndStep()
     }
     m_BetweenStepPairs = false;
     PERFSTUBS_SCOPED_TIMER("BP5Reader::EndStep");
-    PERF_MARK_BEGIN("BP5Reader::PerformGets");
+    CALI_MARK_BEGIN("BP5Reader::PerformGets");
     PerformGets();
-    PERF_MARK_END("BP5Reader::PerformGets");
+    CALI_MARK_END("BP5Reader::PerformGets");
     for (auto &item : MinBlocksInfoMap)
     {
         delete item.second;
