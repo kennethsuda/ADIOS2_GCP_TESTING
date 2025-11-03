@@ -759,6 +759,7 @@ void BP5Writer::SelectiveAggregationMetadata(format::BP5Serializer::TimestepInfo
     std::vector<uint64_t> DataSizes;
     std::vector<core::iovec> AttributeBlocks;
     std::vector<size_t> MetaEncodeSize;
+    CALI_MARK_BEGIN("BP5Writer::metadata-stabilization");
     m_WriterDataPos.resize(0);
     m_WriterDataPos.push_back(m_StartDataPos);
     UniqueMetaMetaBlocks = TSInfo.NewMetaMetaBlocks;
@@ -813,7 +814,9 @@ void BP5Writer::SelectiveAggregationMetadata(format::BP5Serializer::TimestepInfo
         }
         m_Profiler.Stop("ES_GatherMetadataBlocks");
         m_Profiler.Start("ES_write_metadata");
+        CALI_MARK_BEGIN("BP5Writer::WriteMetadata");
         m_LatestMetaDataSize = WriteMetadata(ContigMetadata, MetaEncodeSize, AttributeBlocks);
+        CALI_MARK_END("BP5Writer::WriteMetadata");
 
         m_Profiler.Stop("ES_write_metadata");
         for (auto &a : AttributeBlocks)
@@ -839,6 +842,7 @@ void BP5Writer::SelectiveAggregationMetadata(format::BP5Serializer::TimestepInfo
                                  MetaEncodeSize.data(), MetaEncodeSize.size(), (char *)nullptr, 0);
         }
     }
+    CALI_MARK_END("BP5Writer::metadata-stabilization");
     m_Profiler.Stop("ES_gather_write_meta");
 }
 
@@ -848,6 +852,7 @@ void BP5Writer::TwoLevelAggregationMetadata(format::BP5Serializer::TimestepInfo 
      * Two-step metadata aggregation
      */
     m_Profiler.Start("ES_meta1");
+    CALI_MARK_BEGIN("BP5Writer::metadata-stabilization");
     std::vector<char> MetaBuffer;
     core::iovec m{TSInfo.MetaEncodeBuffer->Data(), TSInfo.MetaEncodeBuffer->m_FixedSize};
     core::iovec a{nullptr, 0};
@@ -948,7 +953,9 @@ void BP5Writer::TwoLevelAggregationMetadata(format::BP5Serializer::TimestepInfo 
             WriteMetaMetadata(UniqueMetaMetaBlocks);
             m_LatestMetaDataPos = m_MetaDataPos;
             m_Profiler.Start("ES_write_metadata");
+            CALI_MARK_BEGIN("BP5Writer::WriteMetadata");
             m_LatestMetaDataSize = WriteMetadata(Metadata, AttributeBlocks);
+            CALI_MARK_END("BP5Writer::WriteMetadata");
             m_Profiler.Stop("ES_write_metadata");
             if (!m_Parameters.AsyncWrite)
             {
@@ -956,6 +963,7 @@ void BP5Writer::TwoLevelAggregationMetadata(format::BP5Serializer::TimestepInfo 
             }
         }
     } // level 2
+    CALI_MARK_END("BP5Writer::metadata-stabilization");
     m_Profiler.Stop("ES_meta2");
 }
 
@@ -994,7 +1002,9 @@ void BP5Writer::EndStep()
     m_AsyncWriteLock.unlock();
 
     // WriteData will free TSInfo.DataBuffer
+    CALI_MARK_BEGIN("BP5Writer::WriteData");
     WriteData(TSInfo.DataBuffer);
+    CALI_MARK_END("BP5Writer::WriteData");
     TSInfo.DataBuffer = NULL;
 
     m_Profiler.Stop("ES_AWD");
