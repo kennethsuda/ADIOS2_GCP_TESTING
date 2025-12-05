@@ -115,7 +115,6 @@ void DaosReader::DaosKVReadMetadata(size_t Step, uint64_t WriterCount)
 {
     std::vector<size_t> list_writer_mdsize;
     list_writer_mdsize.reserve(WriterCount);
-    char key[1000];
     int rc;
     size_t total_mdsize = 0;
     size_t buffer_size = 0;
@@ -132,9 +131,10 @@ void DaosReader::DaosKVReadMetadata(size_t Step, uint64_t WriterCount)
         // Start batch
         while (WriterRank < WriterCount && batchLimit < MAX_KV_GET_REQS)
         {
-            sprintf(key, "step%zu-rank%zu", Step, WriterRank);
+            sprintf(attrkey[batchLimit], "step%zu-rank%zu", Step, WriterRank);
             CALI_MARK_BEGIN("DaosReader::daos_kv_get_size");
-            rc = daos_kv_get(oh, DAOS_TX_NONE, 0, key, &list_writer_mdsize[WriterRank], NULL,
+            rc = daos_kv_get(oh, DAOS_TX_NONE, 0, attrkey[batchLimit],
+                             &list_writer_mdsize[WriterRank], NULL,
                              &ev[batchLimit]);
             ASSERT(rc == 0, "daos_kv_get() failed to read metadata with %d", rc);
             CALI_MARK_END("DaosReader::daos_kv_get_size");
@@ -219,10 +219,11 @@ void DaosReader::DaosKVReadMetadata(size_t Step, uint64_t WriterCount)
         {
             ThisMDSize = list_writer_mdsize[WriterRank];
 
-            sprintf(key, "step%zu-rank%zu", Step, WriterRank);
+            sprintf(attrkey[batchLimit], "step%zu-rank%zu", Step, WriterRank);
             CALI_MARK_BEGIN("DaosReader::daos_kv_get");
-            rc = daos_kv_get(oh, DAOS_TX_NONE, 0, key, &ThisMDSize, &meta_buff[index],
-                             &ev[batchLimit]);
+            rc = daos_kv_get(oh, DAOS_TX_NONE, 0, attrkey[batchLimit],
+                             &list_writer_mdsize[WriterRank],
+                             &meta_buff[index], &ev[batchLimit]);
             ASSERT(rc == 0, "daos_kv_get() failed to read metadata with %d", rc);
             CALI_MARK_END("DaosReader::daos_kv_get");
 

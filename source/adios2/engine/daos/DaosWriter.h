@@ -24,10 +24,8 @@
 #include "adios2/toolkit/shm/Spinlock.h"
 #include "adios2/toolkit/shm/TokenChain.h"
 #include "adios2/toolkit/transportman/TransportMan.h"
-
 #include <caliper/cali-manager.h>
 #include <caliper/cali.h>
-
 #include <daos.h>
 #include <daos_obj.h>
 

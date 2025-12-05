@@ -127,6 +127,7 @@ private:
     /* Declare variables for the KV object */
     daos_handle_t eq;
     daos_event_t ev[MAX_KV_GET_REQS], *evp[MAX_KV_GET_REQS];
+    char attrkey[MAX_KV_GET_REQS][1000];
 
     enum class DaosEngine
     {
